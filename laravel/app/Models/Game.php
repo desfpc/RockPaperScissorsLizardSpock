@@ -16,6 +16,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Game extends Model
 {
+    protected $table = null;
+    public $incrementing = false;
+    public $timestamps = false;
+    public $exists = false;
+
     protected $fillable = [
         'user_id',
         'status_id',

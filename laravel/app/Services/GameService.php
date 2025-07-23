@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\FighterEnum;
 use App\Enums\GameStatusEnum;
 use App\Models\Game;
+use App\Models\GameRound;
 use App\Repositories\GameRepositoryInterface;
 use App\Repositories\GameRoundRepositoryInterface;
 use Exception;
@@ -15,6 +16,7 @@ use InvalidArgumentException;
 class GameService
 {
     private ?Game $game = null;
+    private ?GameRound $lastGameRound = null;
 
     public function __construct(
         private readonly GameRepositoryInterface $gameRepository,
@@ -37,22 +39,35 @@ class GameService
             throw new Exception('Game not found');
         }
 
-        $round = $this->gameRoundRepository->getLastGameRound();
-        $round->counter++;
-        $round->fighter_player = $playerFighter;
-        $round->fighter_opponent = $this->getRandomOpponent();
-        $round->is_win = $this->canWin($round->fighter_player, $round->fighter_opponent);
-        $round->save();
+        $this->lastGameRound = $this->gameRoundRepository->getLastGameRound();
+        $this->lastGameRound->counter++;
+        $this->lastGameRound->fighter_player = $playerFighter;
+        $this->lastGameRound->fighter_opponent = $this->getRandomOpponent();
+        $this->lastGameRound->is_win = $this->canWin(
+            $this->lastGameRound->fighter_player,
+            $this->lastGameRound->fighter_opponent
+        );
+        $this->gameRoundRepository->save($this->lastGameRound);
 
-        if ($round->fighter_player === $round->fighter_opponent) {
+        if ($this->lastGameRound->fighter_player === $this->lastGameRound->fighter_opponent) {
             $this->game->draws++;
-        } elseif ($round->is_win) {
+        } elseif ($this->lastGameRound->is_win) {
             $this->game->wins++;
         } else {
             $this->game->loses++;
         }
 
         $this->gameRepository->save($this->game);
+    }
+
+    public function getLastGameRound(): ?GameRound
+    {
+        return $this->lastGameRound;
+    }
+
+    public function getGame(): ?Game
+    {
+        return $this->game;
     }
 
     /**
@@ -89,7 +104,7 @@ class GameService
         return in_array($against, $this->getWinsAgainst($player));
     }
 
-    private function getAction(FighterEnum $player, FighterEnum $opponent): string
+    public function getAction(FighterEnum $player, FighterEnum $opponent): string
     {
         return match (true) {
             $player === FighterEnum::ROCK && $opponent === FighterEnum::SCISSORS,

@@ -11,4 +11,9 @@ enum FighterEnum: string
     case SCISSORS = 'scissors';
     case LIZARD = 'lizard';
     case SPOCK = 'spock';
+
+    public function getName(): string
+    {
+        return mb_convert_case($this->value, MB_CASE_TITLE, "UTF-8");
+    }
 }

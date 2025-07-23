@@ -15,6 +15,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class GameRound extends Model
 {
+    protected $table = null;
+    public $incrementing = false;
+    public $timestamps = false;
+    public $exists = false;
+
     protected $fillable = [
         'game_id',
         'fighter_player',

@@ -10,7 +10,7 @@ class GameRoundRedisRepository implements GameRoundRepositoryInterface
     private const string CACHE_GAME_ROUND_KEY = 'game_round:';
     private const string CACHE_NULL_GAME_ID = 'console';
 
-    public function getLastGameRound(?int $gameId): GameRound
+    public function getLastGameRound(?int $gameId = null): GameRound
     {
         $key = $this->getGameRoundKey($gameId);
         if (Cache::has($key)) {

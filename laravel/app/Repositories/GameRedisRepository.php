@@ -12,7 +12,7 @@ class GameRedisRepository implements GameRepositoryInterface
     private const string CACHE_GAME_KEY = 'game:';
     private const string CACHE_NULL_PLAYER_ID = 'console';
 
-    public function getActiveUserGame(?int $userId): Game
+    public function getActiveUserGame(?int $userId = null): Game
     {
         $game = null;
         $key = $this->getGameKey($userId);

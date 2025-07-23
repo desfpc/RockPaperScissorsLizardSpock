@@ -6,7 +6,7 @@ use App\Models\Game;
 
 interface GameRepositoryInterface
 {
-    public function getActiveUserGame(?int $userId): Game;
+    public function getActiveUserGame(?int $userId = null): Game;
 
     public function create(?int $userId): Game;
 

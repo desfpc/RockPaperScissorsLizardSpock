@@ -6,7 +6,7 @@ use App\Models\GameRound;
 
 interface GameRoundRepositoryInterface
 {
-    public function getLastGameRound(?int $gameId): GameRound;
+    public function getLastGameRound(?int $gameId = null): GameRound;
 
     public function save(GameRound $gameRound): void;
 

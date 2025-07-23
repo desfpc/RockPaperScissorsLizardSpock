@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use app\Enums\FighterEnum;
+use App\Enums\FighterEnum;
 use Illuminate\Database\Eloquent\Model;
 
 /**

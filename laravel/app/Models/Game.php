@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use app\Enums\GameStatusEnum;
+use App\Enums\GameStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 

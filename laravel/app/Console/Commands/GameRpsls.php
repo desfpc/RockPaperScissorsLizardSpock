@@ -41,7 +41,7 @@ class GameRpsls extends Command
             $request->maxChoice = count($this->cases);
 
             if (!$request->validate()) {
-                $this->error('Invalid failed:');
+                $this->error('Invalid choice:');
                 foreach ($request->errors() as $error) {
                     $this->error($error);
                 }

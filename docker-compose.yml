@@ -3,6 +3,7 @@ services:
   app:
     build:
       context: .
+    container_name: app-server
     volumes:
       - .:/var/www
     ports:
@@ -10,6 +11,7 @@ services:
     depends_on:
       - mariadb
       - redis
+    restart: unless-stopped
   mariadb:
     image: mariadb:latest
     container_name: mariadb-server

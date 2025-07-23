@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Domain\Game\Enum;
+declare(strict_types=1);
 
-enum Fighter: string
+namespace app\Enums;
+
+enum FighterEnum: string
 {
     case ROCK = 'rock';
     case PAPER = 'paper';
     case SCISSORS = 'scissors';
     case LIZARD = 'lizard';
     case SPOCK = 'spock';
-
-    public function getWinsAgainst(): array
+    /*public function getWinsAgainst(): array
     {
         return match ($this) {
             self::ROCK => [self::SCISSORS, self::LIZARD],
@@ -41,5 +42,5 @@ enum Fighter: string
     public function canWin(Fighter $against): bool
     {
         return in_array($against, $this->getWinsAgainst());
-    }
+    }*/
 }

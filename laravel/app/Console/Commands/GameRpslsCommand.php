@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 use Throwable;
 
-class GameRpsls extends Command
+class GameRpslsCommand extends Command
 {
     protected $signature = 'game:rpsls';
     protected $description = 'Play Rock Paper Scissors Lizard Spock 1st player against the computer';

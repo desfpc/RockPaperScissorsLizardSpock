@@ -6,6 +6,7 @@ use App\Repositories\GameRedisRepository;
 use App\Repositories\GameRepositoryInterface;
 use App\Repositories\GameRoundRedisRepository;
 use App\Repositories\GameRoundRepositoryInterface;
+use App\Services\FighterRulesService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,5 +15,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(GameRepositoryInterface::class, GameRedisRepository::class);
         $this->app->bind(GameRoundRepositoryInterface::class, GameRoundRedisRepository::class);
+
+        $this->app->singleton(FighterRulesService::class);
     }
 }

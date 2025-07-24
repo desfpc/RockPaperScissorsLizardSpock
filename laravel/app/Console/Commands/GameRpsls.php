@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Enums\FighterEnum;
 use App\Http\Requests\GameChoiceRequest;
+use App\Models\GameRound;
 use App\Services\GameService;
 use Exception;
 use Illuminate\Console\Command;
@@ -15,13 +16,13 @@ class GameRpsls extends Command
     protected $signature = 'game:rpsls';
     protected $description = 'Play Rock Paper Scissors Lizard Spock 1st player against the computer';
 
-    private array $cases;
+    private array $fighterOptions;
 
     public function __construct(private readonly GameService $gameService)
     {
         parent::__construct();
 
-        $this->cases = FighterEnum::cases();
+        $this->fighterOptions = FighterEnum::cases();
         $this->gameService->startGame();
     }
 
@@ -30,32 +31,34 @@ class GameRpsls extends Command
      */
     public function handle(): void
     {
-        $this->info('Welcome to Rock Paper Scissors Lizard Spock game!');
+        $this->displayWelcomeMessage();
+        $this->runGameLoop();
+    }
 
+    private function displayWelcomeMessage(): void
+    {
+        $this->info('Welcome to Rock Paper Scissors Lizard Spock game!');
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function runGameLoop(): void
+    {
         while (true) {
             $this->displayMenu();
             $choice = $this->ask('Your choice');
 
-            $request = new GameChoiceRequest();
-            $request->choice = $choice;
-            $request->maxChoice = count($this->cases);
-
-            if (!$request->validate()) {
-                $this->error('Invalid choice:');
-                foreach ($request->errors() as $error) {
-                    $this->error($error);
-                }
+            if (!$this->isValidChoice($choice)) {
                 continue;
             }
 
             if ($choice === '0') {
-                $this->displayFinalStats();
-                $this->info('Thanks for playing!');
-                $this->gameService->endGame();
+                $this->endGame();
                 break;
             }
 
-            $this->processGame($this->cases[$choice - 1]);
+            $this->playRound($this->fighterOptions[$choice - 1]);
         }
     }
 
@@ -64,13 +67,44 @@ class GameRpsls extends Command
         $this->info("\nChoose your move:");
 
         $i = 0;
-        foreach ($this->cases as $case) {
+        foreach ($this->fighterOptions as $option) {
             ++$i;
-
-            $this->info($i . '. ' . $case->getName());
+            $this->info($i . '. ' . $option->getName());
         }
 
         $this->info('0. Quit');
+    }
+
+    private function isValidChoice(string $choice): bool
+    {
+        $request = new GameChoiceRequest();
+        $request->choice = $choice;
+        $request->maxChoice = count($this->fighterOptions);
+
+        if (!$request->validate()) {
+            $this->displayValidationErrors($request->errors());
+            return false;
+        }
+
+        return true;
+    }
+
+    private function displayValidationErrors(array $errors): void
+    {
+        $this->error('Invalid choice:');
+        foreach ($errors as $error) {
+            $this->error($error);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function endGame(): void
+    {
+        $this->displayFinalStats();
+        $this->info('Thanks for playing!');
+        $this->gameService->endGame();
     }
 
     private function displayFinalStats(): void
@@ -82,7 +116,7 @@ class GameRpsls extends Command
     /**
      * @throws Exception
      */
-    private function processGame(FighterEnum $fighter): void
+    private function playRound(FighterEnum $fighter): void
     {
         $this->gameService->playRound($fighter);
         $this->showRoundResults();
@@ -92,26 +126,42 @@ class GameRpsls extends Command
     private function showRoundResults(): void
     {
         $round = $this->gameService->getLastGameRound();
-        $this->info('You chose: ' . $round->fighter_player->getName());
-        $this->info('Computer chose: ' . $round->fighter_opponent->getName());
+        $this->displayPlayerChoices($round);
 
         if ($round->fighter_player === $round->fighter_opponent) {
-            $this->info('No Winner - Draw!');
+            $this->displayDrawResult();
         } else {
-            if ($round->is_win) {
-                $message = 'You win!';
-                $first = $round->fighter_player;
-                $second = $round->fighter_opponent;
-            } else {
-                $message = 'You lose!';
-                $first = $round->fighter_opponent;
-                $second = $round->fighter_player;
-            }
-            $this->info('Result: ' . $message);
-            $this->info(
-                $first->getName() . ' ' . $this->gameService->getAction($first, $second) . ' ' . $second->getName()
-            );
+            $this->displayWinLoseResult($round);
         }
+    }
+
+    private function displayPlayerChoices(GameRound $round): void
+    {
+        $this->info('You chose: ' . $round->fighter_player->getName());
+        $this->info('Computer chose: ' . $round->fighter_opponent->getName());
+    }
+
+    private function displayDrawResult(): void
+    {
+        $this->info('No Winner - Draw!');
+    }
+
+    private function displayWinLoseResult(GameRound $round): void
+    {
+        if ($round->is_win) {
+            $message = 'You win!';
+            $winner = $round->fighter_player;
+            $loser = $round->fighter_opponent;
+        } else {
+            $message = 'You lose!';
+            $winner = $round->fighter_opponent;
+            $loser = $round->fighter_player;
+        }
+
+        $this->info('Result: ' . $message);
+        $this->info(
+            $winner->getName() . ' ' . $this->gameService->getAction($winner, $loser) . ' ' . $loser->getName()
+        );
     }
 
     private function showGameScores(): void

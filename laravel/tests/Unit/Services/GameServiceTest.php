@@ -10,7 +10,6 @@ use App\Repositories\GameRepositoryInterface;
 use App\Repositories\GameRoundRepositoryInterface;
 use App\Services\GameService;
 use Exception;
-use InvalidArgumentException;
 use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionException;
 use ReflectionMethod;
@@ -99,7 +98,6 @@ class GameServiceTest extends TestCase
         $this->initializeTestGame();
 
         $this->gameService->setOpponentToReturn(FighterEnum::SCISSORS);
-
         $this->gameService->playRound(FighterEnum::ROCK);
 
         $this->assertEquals(1, $this->gameRound->counter);
@@ -166,48 +164,6 @@ class GameServiceTest extends TestCase
 
         $this->assertInstanceOf(FighterEnum::class, $result);
         $this->assertContains($result, FighterEnum::cases());
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testGetWinsAgainst(): void
-    {
-        $method = $this->getPrivateMethod('getWinsAgainst');
-
-        $this->assertEquals(
-            [FighterEnum::SCISSORS, FighterEnum::LIZARD],
-            $method->invoke($this->gameService, FighterEnum::ROCK)
-        );
-        $this->assertEquals(
-            [FighterEnum::ROCK, FighterEnum::SPOCK],
-            $method->invoke($this->gameService, FighterEnum::PAPER)
-        );
-        $this->assertEquals(
-            [FighterEnum::PAPER, FighterEnum::LIZARD],
-            $method->invoke($this->gameService, FighterEnum::SCISSORS)
-        );
-        $this->assertEquals(
-            [FighterEnum::PAPER, FighterEnum::SPOCK],
-            $method->invoke($this->gameService, FighterEnum::LIZARD)
-        );
-        $this->assertEquals(
-            [FighterEnum::ROCK, FighterEnum::SCISSORS],
-            $method->invoke($this->gameService, FighterEnum::SPOCK)
-        );
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testGetActionThrowsExceptionForInvalidCombination(): void
-    {
-        $method = $this->getPrivateMethod('getAction');
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid combination');
-
-        $method->invoke($this->gameService, FighterEnum::ROCK, FighterEnum::PAPER);
     }
 
     private function initializeTestGame(): void

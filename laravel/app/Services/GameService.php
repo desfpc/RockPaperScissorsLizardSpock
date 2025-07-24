@@ -11,7 +11,6 @@ use App\Models\GameRound;
 use App\Repositories\GameRepositoryInterface;
 use App\Repositories\GameRoundRepositoryInterface;
 use Exception;
-use InvalidArgumentException;
 
 class GameService
 {
@@ -20,7 +19,8 @@ class GameService
 
     public function __construct(
         private readonly GameRepositoryInterface $gameRepository,
-        private readonly GameRoundRepositoryInterface $gameRoundRepository
+        private readonly GameRoundRepositoryInterface $gameRoundRepository,
+        private readonly FighterRulesService $fighterRulesService
     ) {
     }
 
@@ -35,29 +35,9 @@ class GameService
      */
     public function playRound(FighterEnum $playerFighter): void
     {
-        if (!$this->game) {
-            throw new Exception('Game not found');
-        }
-
-        $this->lastGameRound = $this->gameRoundRepository->getLastGameRound();
-        $this->lastGameRound->counter++;
-        $this->lastGameRound->fighter_player = $playerFighter;
-        $this->lastGameRound->fighter_opponent = $this->getRandomOpponent();
-        $this->lastGameRound->is_win = $this->canWin(
-            $this->lastGameRound->fighter_player,
-            $this->lastGameRound->fighter_opponent
-        );
-        $this->gameRoundRepository->save($this->lastGameRound);
-
-        if ($this->lastGameRound->fighter_player === $this->lastGameRound->fighter_opponent) {
-            $this->game->draws++;
-        } elseif ($this->lastGameRound->is_win) {
-            $this->game->wins++;
-        } else {
-            $this->game->loses++;
-        }
-
-        $this->gameRepository->save($this->game);
+        $this->validateGameExists();
+        $this->processRound($playerFighter);
+        $this->updateGameScore();
     }
 
     public function getLastGameRound(): ?GameRound
@@ -75,11 +55,14 @@ class GameService
      */
     public function endGame(): void
     {
-        if (!$this->game) {
-            throw new Exception('Game not found');
-        }
+        $this->validateGameExists();
         $this->game->status_id = GameStatusEnum::FINISHED;
         $this->gameRepository->save($this->game);
+    }
+
+    public function getAction(FighterEnum $player, FighterEnum $opponent): string
+    {
+        return $this->fighterRulesService->getAction($player, $opponent);
     }
 
     protected function getRandomOpponent(): FighterEnum
@@ -88,36 +71,39 @@ class GameService
         return $cases[array_rand($cases)];
     }
 
-    private function getWinsAgainst(FighterEnum $fighter): array
+    /**
+     * @throws Exception
+     */
+    private function validateGameExists(): void
     {
-        return match ($fighter) {
-            FighterEnum::ROCK => [FighterEnum::SCISSORS, FighterEnum::LIZARD],
-            FighterEnum::PAPER => [FighterEnum::ROCK, FighterEnum::SPOCK],
-            FighterEnum::SCISSORS => [FighterEnum::PAPER, FighterEnum::LIZARD],
-            FighterEnum::LIZARD => [FighterEnum::PAPER, FighterEnum::SPOCK],
-            FighterEnum::SPOCK => [FighterEnum::ROCK, FighterEnum::SCISSORS],
-        };
+        if (!$this->game) {
+            throw new Exception('Game not found');
+        }
     }
 
-    private function canWin(FighterEnum $player, FighterEnum $against): bool
+    private function processRound(FighterEnum $playerFighter): void
     {
-        return in_array($against, $this->getWinsAgainst($player));
+        $this->lastGameRound = $this->gameRoundRepository->getLastGameRound();
+        $this->lastGameRound->counter++;
+        $this->lastGameRound->fighter_player = $playerFighter;
+        $this->lastGameRound->fighter_opponent = $this->getRandomOpponent();
+        $this->lastGameRound->is_win = $this->fighterRulesService->canWin(
+            $this->lastGameRound->fighter_player,
+            $this->lastGameRound->fighter_opponent
+        );
+        $this->gameRoundRepository->save($this->lastGameRound);
     }
 
-    public function getAction(FighterEnum $player, FighterEnum $opponent): string
+    private function updateGameScore(): void
     {
-        return match (true) {
-            $player === FighterEnum::ROCK && $opponent === FighterEnum::SCISSORS,
-                $player === FighterEnum::ROCK && $opponent === FighterEnum::LIZARD => 'crushes',
-            $player === FighterEnum::PAPER && $opponent === FighterEnum::ROCK => 'covers',
-            $player === FighterEnum::PAPER && $opponent === FighterEnum::SPOCK => 'disproves',
-            $player === FighterEnum::SCISSORS && $opponent === FighterEnum::PAPER => 'cuts',
-            $player === FighterEnum::SCISSORS && $opponent === FighterEnum::LIZARD => 'decapitates',
-            $player === FighterEnum::LIZARD && $opponent === FighterEnum::PAPER => 'eats',
-            $player === FighterEnum::LIZARD && $opponent === FighterEnum::SPOCK => 'poisons',
-            $player === FighterEnum::SPOCK && $opponent === FighterEnum::ROCK => 'vaporizes',
-            $player === FighterEnum::SPOCK && $opponent === FighterEnum::SCISSORS => 'smashes',
-            default => throw new InvalidArgumentException('Invalid combination'),
-        };
+        if ($this->lastGameRound->fighter_player === $this->lastGameRound->fighter_opponent) {
+            $this->game->draws++;
+        } elseif ($this->lastGameRound->is_win) {
+            $this->game->wins++;
+        } else {
+            $this->game->loses++;
+        }
+
+        $this->gameRepository->save($this->game);
     }
 }

@@ -10,9 +10,9 @@ use App\Models\Game;
 use App\Models\GameRound;
 use App\Repositories\GameRepositoryInterface;
 use App\Repositories\GameRoundRepositoryInterface;
-use Exception;
+use App\Exceptions\GameException;
 
-class GameService
+class GameService implements GameServiceInterface
 {
     private ?Game $game = null;
     private ?GameRound $lastGameRound = null;
@@ -31,7 +31,7 @@ class GameService
     }
 
     /**
-     * @throws Exception
+     * @throws GameException
      */
     public function playRound(FighterEnum $playerFighter): void
     {
@@ -51,7 +51,7 @@ class GameService
     }
 
     /**
-     * @throws Exception
+     * @throws GameException
      */
     public function endGame(): void
     {
@@ -72,12 +72,12 @@ class GameService
     }
 
     /**
-     * @throws Exception
+     * @throws GameException
      */
     private function validateGameExists(): void
     {
         if (!$this->game) {
-            throw new Exception('Game not found');
+            throw new GameException('Game not found', GameException::ERROR_VALIDATION_PREFIX);
         }
     }
 

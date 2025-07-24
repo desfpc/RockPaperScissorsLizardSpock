@@ -5,169 +5,144 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\FighterEnum;
+use App\Exceptions\GameException;
 use App\Http\Requests\GameChoiceRequest;
-use App\Models\GameRound;
-use App\Services\GameService;
+use App\Presenters\GameRpslsPresenterInterface;
+use App\Services\GameServiceInterface;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Console\Command\Command as CommandAlias;
+use Throwable;
 
 class GameRpsls extends Command
 {
     protected $signature = 'game:rpsls';
     protected $description = 'Play Rock Paper Scissors Lizard Spock 1st player against the computer';
 
+
     private array $fighterOptions;
 
-    public function __construct(private readonly GameService $gameService)
-    {
+    public function __construct(
+        private readonly GameServiceInterface $gameService,
+        private readonly GameRpslsPresenterInterface $presenter
+    ) {
         parent::__construct();
 
         $this->fighterOptions = FighterEnum::cases();
         $this->gameService->startGame();
+        $this->presenter->setCommand($this);
     }
 
-    /**
-     * @throws Exception
-     */
-    public function handle(): void
+    public function handle(): int
     {
-        $this->displayWelcomeMessage();
-        $this->runGameLoop();
+        try {
+            $this->presenter->displayWelcomeMessage();
+            $this->runGameLoop();
+            return CommandAlias::SUCCESS;
+        } catch (Throwable $e) {
+            $this->handleError($e);
+            return CommandAlias::FAILURE;
+        }
     }
 
-    private function displayWelcomeMessage(): void
-    {
-        $this->info('Welcome to Rock Paper Scissors Lizard Spock game!');
-    }
-
-    /**
-     * @throws Exception
-     */
     private function runGameLoop(): void
     {
         while (true) {
-            $this->displayMenu();
-            $choice = $this->ask('Your choice');
+            try {
+                $this->presenter->displayMenu($this->fighterOptions);
+                $choice = $this->presenter->askForChoice();
 
-            if (!$this->isValidChoice($choice)) {
+                if (!$this->isValidChoice($choice)) {
+                    continue;
+                }
+
+                if ($choice === '0') {
+                    $this->endGame();
+                    break;
+                }
+
+                $this->playRound($this->fighterOptions[$choice - 1]);
+            } catch (Throwable $e) {
+                $this->handleError($e);
                 continue;
             }
-
-            if ($choice === '0') {
-                $this->endGame();
-                break;
-            }
-
-            $this->playRound($this->fighterOptions[$choice - 1]);
         }
     }
 
-    private function displayMenu(): void
-    {
-        $this->info("\nChoose your move:");
-
-        $i = 0;
-        foreach ($this->fighterOptions as $option) {
-            ++$i;
-            $this->info($i . '. ' . $option->getName());
-        }
-
-        $this->info('0. Quit');
-    }
-
-    private function isValidChoice(string $choice): bool
+    private function isValidChoice(?string $choice): bool
     {
         $request = new GameChoiceRequest();
         $request->choice = $choice;
         $request->maxChoice = count($this->fighterOptions);
 
         if (!$request->validate()) {
-            $this->displayValidationErrors($request->errors());
+            $this->presenter->displayValidationErrors($request->errors());
             return false;
         }
 
         return true;
     }
 
-    private function displayValidationErrors(array $errors): void
+    private function endGame(): void
     {
-        $this->error('Invalid choice:');
-        foreach ($errors as $error) {
-            $this->error($error);
+        try {
+            $game = $this->gameService->getGame();
+            $this->presenter->displayFinalStats($game);
+            $this->presenter->displayThanksMessage();
+            $this->gameService->endGame();
+        } catch (Throwable $e) {
+            $this->handleError($e);
         }
     }
 
-    /**
-     * @throws Exception
-     */
-    private function endGame(): void
-    {
-        $this->displayFinalStats();
-        $this->info('Thanks for playing!');
-        $this->gameService->endGame();
-    }
-
-    private function displayFinalStats(): void
-    {
-        $this->info("\nFinal Score:");
-        $this->showGameScores();
-    }
-
-    /**
-     * @throws Exception
-     */
     private function playRound(FighterEnum $fighter): void
     {
-        $this->gameService->playRound($fighter);
-        $this->showRoundResults();
-        $this->showGameScores();
+        try {
+            $this->gameService->playRound($fighter);
+            $this->showRoundResults();
+            $this->showGameScores();
+        } catch (Throwable $e) {
+            $this->handleError($e);
+        }
     }
 
     private function showRoundResults(): void
     {
-        $round = $this->gameService->getLastGameRound();
-        $this->displayPlayerChoices($round);
+        try {
+            $round = $this->gameService->getLastGameRound();
 
-        if ($round->fighter_player === $round->fighter_opponent) {
-            $this->displayDrawResult();
-        } else {
-            $this->displayWinLoseResult($round);
+            if ($round->fighter_player !== $round->fighter_opponent) {
+                $winner = $round->is_win ? $round->fighter_player : $round->fighter_opponent;
+                $loser = $round->is_win ? $round->fighter_opponent : $round->fighter_player;
+                $action = $this->gameService->getAction($winner, $loser);
+            } else {
+                $action = '';
+            }
+
+            $this->presenter->showRoundResults($round, $action);
+        } catch (Throwable $e) {
+            $this->handleError($e);
         }
-    }
-
-    private function displayPlayerChoices(GameRound $round): void
-    {
-        $this->info('You chose: ' . $round->fighter_player->getName());
-        $this->info('Computer chose: ' . $round->fighter_opponent->getName());
-    }
-
-    private function displayDrawResult(): void
-    {
-        $this->info('No Winner - Draw!');
-    }
-
-    private function displayWinLoseResult(GameRound $round): void
-    {
-        if ($round->is_win) {
-            $message = 'You win!';
-            $winner = $round->fighter_player;
-            $loser = $round->fighter_opponent;
-        } else {
-            $message = 'You lose!';
-            $winner = $round->fighter_opponent;
-            $loser = $round->fighter_player;
-        }
-
-        $this->info('Result: ' . $message);
-        $this->info(
-            $winner->getName() . ' ' . $this->gameService->getAction($winner, $loser) . ' ' . $loser->getName()
-        );
     }
 
     private function showGameScores(): void
     {
-        $game = $this->gameService->getGame();
-        $this->info(sprintf('Score: You %d - %d Computer', $game->wins, $game->loses));
-        $this->info(sprintf('Draws: %d', $game->draws));
+        try {
+            $game = $this->gameService->getGame();
+            $this->presenter->showGameScores($game);
+        } catch (Throwable $e) {
+            $this->handleError($e);
+        }
+    }
+
+    private function handleError(Exception $e): void
+    {
+        if ($e instanceof GameException) {
+            Log::error('[' . $e->getPrefix() . '] ' . $e->getMessage(), ['exception' => $e]);
+        } else {
+            Log::error('[' . GameException::ERROR_PREFIX . '] ' . $e->getMessage(), ['exception' => $e]);
+        }
+        $this->presenter->displayError($e->getMessage());
     }
 }

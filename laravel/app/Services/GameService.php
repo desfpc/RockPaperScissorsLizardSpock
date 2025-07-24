@@ -62,7 +62,7 @@ class GameService implements GameServiceInterface
 
     public function getAction(FighterEnum $player, FighterEnum $opponent): string
     {
-        return $this->fighterRulesService->getAction($player, $opponent);
+        return $this->fighterRulesService->getAction($player, $opponent)->value;
     }
 
     protected function getRandomOpponent(): FighterEnum

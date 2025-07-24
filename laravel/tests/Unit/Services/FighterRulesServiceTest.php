@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Enums\FighterActionEnum;
 use App\Enums\FighterEnum;
 use App\Services\FighterRulesService;
 use InvalidArgumentException;
@@ -52,20 +53,44 @@ class FighterRulesServiceTest extends TestCase
 
     public function testGetAction(): void
     {
-        $this->assertEquals('crushes', $this->fighterRulesService->getAction(FighterEnum::ROCK, FighterEnum::SCISSORS));
-        $this->assertEquals('crushes', $this->fighterRulesService->getAction(FighterEnum::ROCK, FighterEnum::LIZARD));
-        $this->assertEquals('covers', $this->fighterRulesService->getAction(FighterEnum::PAPER, FighterEnum::ROCK));
-        $this->assertEquals('disproves', $this->fighterRulesService->getAction(FighterEnum::PAPER, FighterEnum::SPOCK));
-        $this->assertEquals('cuts', $this->fighterRulesService->getAction(FighterEnum::SCISSORS, FighterEnum::PAPER));
         $this->assertEquals(
-            'decapitates',
+            FighterActionEnum::CRUSHES,
+            $this->fighterRulesService->getAction(FighterEnum::ROCK, FighterEnum::SCISSORS)
+        );
+        $this->assertEquals(
+            FighterActionEnum::CRUSHES,
+            $this->fighterRulesService->getAction(FighterEnum::ROCK, FighterEnum::LIZARD)
+        );
+        $this->assertEquals(
+            FighterActionEnum::COVERS,
+            $this->fighterRulesService->getAction(FighterEnum::PAPER, FighterEnum::ROCK)
+        );
+        $this->assertEquals(
+            FighterActionEnum::DISPROVES,
+            $this->fighterRulesService->getAction(FighterEnum::PAPER, FighterEnum::SPOCK)
+        );
+        $this->assertEquals(
+            FighterActionEnum::CUTS,
+            $this->fighterRulesService->getAction(FighterEnum::SCISSORS, FighterEnum::PAPER)
+        );
+        $this->assertEquals(
+            FighterActionEnum::DECAPITATES,
             $this->fighterRulesService->getAction(FighterEnum::SCISSORS, FighterEnum::LIZARD)
         );
-        $this->assertEquals('eats', $this->fighterRulesService->getAction(FighterEnum::LIZARD, FighterEnum::PAPER));
-        $this->assertEquals('poisons', $this->fighterRulesService->getAction(FighterEnum::LIZARD, FighterEnum::SPOCK));
-        $this->assertEquals('vaporizes', $this->fighterRulesService->getAction(FighterEnum::SPOCK, FighterEnum::ROCK));
         $this->assertEquals(
-            'smashes',
+            FighterActionEnum::EATS,
+            $this->fighterRulesService->getAction(FighterEnum::LIZARD, FighterEnum::PAPER)
+        );
+        $this->assertEquals(
+            FighterActionEnum::POISONS,
+            $this->fighterRulesService->getAction(FighterEnum::LIZARD, FighterEnum::SPOCK)
+        );
+        $this->assertEquals(
+            FighterActionEnum::VAPORIZES,
+            $this->fighterRulesService->getAction(FighterEnum::SPOCK, FighterEnum::ROCK)
+        );
+        $this->assertEquals(
+            FighterActionEnum::SMASHES,
             $this->fighterRulesService->getAction(FighterEnum::SPOCK, FighterEnum::SCISSORS)
         );
     }

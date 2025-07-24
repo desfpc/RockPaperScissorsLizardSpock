@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\FighterActionEnum;
 use App\Enums\FighterEnum;
 use InvalidArgumentException;
 
@@ -25,20 +26,20 @@ class FighterRulesService
         return in_array($against, $this->getWinsAgainst($player));
     }
 
-    public function getAction(FighterEnum $player, FighterEnum $opponent): string
+    public function getAction(FighterEnum $player, FighterEnum $opponent): FighterActionEnum
     {
         return match (true) {
             $player === FighterEnum::ROCK && $opponent === FighterEnum::SCISSORS,
-                $player === FighterEnum::ROCK && $opponent === FighterEnum::LIZARD => 'crushes',
-            $player === FighterEnum::PAPER && $opponent === FighterEnum::ROCK => 'covers',
-            $player === FighterEnum::PAPER && $opponent === FighterEnum::SPOCK => 'disproves',
-            $player === FighterEnum::SCISSORS && $opponent === FighterEnum::PAPER => 'cuts',
-            $player === FighterEnum::SCISSORS && $opponent === FighterEnum::LIZARD => 'decapitates',
-            $player === FighterEnum::LIZARD && $opponent === FighterEnum::PAPER => 'eats',
-            $player === FighterEnum::LIZARD && $opponent === FighterEnum::SPOCK => 'poisons',
-            $player === FighterEnum::SPOCK && $opponent === FighterEnum::ROCK => 'vaporizes',
-            $player === FighterEnum::SPOCK && $opponent === FighterEnum::SCISSORS => 'smashes',
-            default => throw new InvalidArgumentException('Invalid combination'),
+                $player === FighterEnum::ROCK && $opponent === FighterEnum::LIZARD => FighterActionEnum::CRUSHES,
+            $player === FighterEnum::PAPER && $opponent === FighterEnum::ROCK => FighterActionEnum::COVERS,
+            $player === FighterEnum::PAPER && $opponent === FighterEnum::SPOCK => FighterActionEnum::DISPROVES,
+            $player === FighterEnum::SCISSORS && $opponent === FighterEnum::PAPER => FighterActionEnum::CUTS,
+            $player === FighterEnum::SCISSORS && $opponent === FighterEnum::LIZARD => FighterActionEnum::DECAPITATES,
+            $player === FighterEnum::LIZARD && $opponent === FighterEnum::PAPER => FighterActionEnum::EATS,
+            $player === FighterEnum::LIZARD && $opponent === FighterEnum::SPOCK => FighterActionEnum::POISONS,
+            $player === FighterEnum::SPOCK && $opponent === FighterEnum::ROCK => FighterActionEnum::VAPORIZES,
+            $player === FighterEnum::SPOCK && $opponent === FighterEnum::SCISSORS => FighterActionEnum::SMASHES,
+            default => throw new InvalidArgumentException(FighterActionEnum::INVALID),
         };
     }
 }

@@ -62,12 +62,17 @@ class GameRpsls extends Command
                     break;
                 }
 
-                $this->playRound($this->fighterOptions[$choice - 1]);
+                $this->playRound($this->getPlayerFighter((int) $choice));
             } catch (Throwable $e) {
                 $this->handleError($e);
                 continue;
             }
         }
+    }
+
+    private function getPlayerFighter(int $choice): FighterEnum
+    {
+        return $this->fighterOptions[$choice - 1];
     }
 
     private function isValidChoice(?string $choice): bool
